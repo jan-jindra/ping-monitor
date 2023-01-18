@@ -30,8 +30,9 @@ while read "group" "host" "alias" "lastStatus" "lastChange"
     if [ ! -f /var/www/localhost/htdocs/hosts/$host.html ];then touch /var/www/localhost/htdocs/hosts/$host.html;fi
     now=$(date "+%d.%m.%C%y %H:%M:%S")
     newStatus=OFF
-    echo "Testing $host..."
+    echo -n "Testing $host...   "
     ping -c 1 $host >/dev/null && newStatus=OK
+    echo $newStatus
     if [ ! "$newStatus" = "$lastStatus" ];then
         echo "Status of host $host has chaged from $lastStatus to $newStatus on $now."
         echo "$group;$host;$alias;$newStatus;$now" >> $data.tmp
@@ -81,7 +82,7 @@ echo "
 <style>
 
            body {
-                  background-color: #1e3953;
+                  background-color: #3d3d3d;
                   color: #D3D3D3;
                   font-family: Tahoma, Arial;
                   font-size: 13px;
@@ -101,14 +102,14 @@ echo "
            }
            td, th {
                   padding: 5px;
-                  border: 1px solid #20adf2;
+                  border: 1px solid #b9bbbd;
            }
 
            th {
                   padding: 10px 5px;
                   color: white;
-                  background-color: #0f263e;
-                  border-color: #20adf2;
+                  background-color: #2d2e2e;
+                  border-color: #b9bbbd;
            }
            tr:nth-child(even),
            tr:nth-child(even) td {
