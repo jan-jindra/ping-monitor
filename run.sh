@@ -7,6 +7,7 @@ version=2023.01.001
 #variables
 data=/root/test.csv #"database" 
 htmlFinal=/var/www/localhost/htdocs/index.html #final html file
+lastest=/root/lastest.txt # log of lastest changes
 
 #web colours
 green='#12d32c'
@@ -21,6 +22,7 @@ fi
 if [ -f $data.tmp ];then rm $data.tmp;fi
 if [ -f $htmlFinal.tmp ];then rm $htmlFinal.tmp;fi
 if [ ! -d /var/www/localhost/htdocs/hosts ];then mkdir -p /var/www/localhost/htdocs/hosts;fi
+if [ ! -f $lastest ];then touch $lastest;fi
 
 # reload data
 OLDIFS=$IFS
@@ -33,10 +35,19 @@ while read "group" "host" "alias" "lastStatus" "lastChange"
     echo -n "Testing $host...   "
     ping -c 1 $host >/dev/null && newStatus=OK
     echo $newStatus
+    
+    if [ -z $alias ];then
+        resovledAlias=""
+    else
+        resovledAlias="($alias)"
+    fi
+
     if [ ! "$newStatus" = "$lastStatus" ];then
         echo "Status of host $host has chaged from $lastStatus to $newStatus on $now."
         echo "$group;$host;$alias;$newStatus;$now" >> $data.tmp
         echo "$now : Status changed to $newStatus<br>" >> /var/www/localhost/htdocs/hosts/$host.html
+        echo "$now : $host $resovledAlias - Status changed to $newStatus<br>" >> $lastest 
+
     else
         echo "$group;$host;$alias;$lastStatus;$lastChange" >> $data.tmp
     fi
@@ -125,8 +136,10 @@ echo "
 <p></p>
 <table>
     <colgroup><col/><col/><col/><col/><col/><col/></colgroup>
-    <tr><th>Group</th><th>host (alias)</th><th>Last state</th><th>Last change</th></tr>
+    <tr><th style='text-align:left'>Group</th><th style='text-align:left'>host (alias)</th><th>Last state</th><th>Last change</th></tr>
 " > $htmlFinal.tmp
+
+# hosts
 OLDIFS=$IFS
 IFS=';'
 while read "group" "host" "alias" "lastStatus" "lastChange"
@@ -140,24 +153,31 @@ while read "group" "host" "alias" "lastStatus" "lastChange"
     echo "Last Change : $lastChange"
     echo 
 output
-
     if [ -z $alias ];then
         resovledAlias=""
     else
         resovledAlias="($alias)"
     fi
+
+
     if [ "$lastStatus" = "OK" ];then 
         
-        echo "<tr><td>$group</td><td><a href="/hosts/$host.html">$host $resovledAlias</a></td><td style='color:$green'>$lastStatus</td><td>$lastChange</td></tr>" >> $htmlFinal.tmp
+        echo "<tr><td style='text-align:left'>$group</td><td style='text-align:left'><a href="/hosts/$host.html">$host $resovledAlias</a></td><td style='color:$green'>$lastStatus</td><td>$lastChange</td></tr>" >> $htmlFinal.tmp
         
         
     else
-        echo "<tr><td style='color:$red'>$group</td><td style='color:$red'><a href="/hosts/$host.html">$host $resovledAlias</a></td><td style='color:$red'>$lastStatus</td><td style='color:$red'>$lastChange</td></tr>" >> $htmlFinal.tmp
+        echo "<tr><td style='text-align:left;color:$red'>$group</td><td style='text-align:left;color:$red'><a href="/hosts/$host.html">$host $resovledAlias</a></td><td style='color:$red'>$lastStatus</td><td style='color:$red'>$lastChange</td></tr>" >> $htmlFinal.tmp
     fi
 done < $data
 IFS=$OLDIFS
-
+lastestLogs=$(tail -n 50 $lastest | tac )
 echo "
+</table>
+<br>
+<table>
+<colgroup><col/><col/></colgroup>
+    <tr><td style='color:white;text-align:left; width: 10%;color: black;background-color:white;font-size: 16px'><b>Lastest logs:</b></td></tr>
+    <tr><td style='color:white;text-align:left; width: 10%;color: black;background-color:white;font-size: 11px'>$lastestLogs</td></tr>
 </table>
 </body></html>" >> $htmlFinal.tmp
 mv $htmlFinal.tmp $htmlFinal
