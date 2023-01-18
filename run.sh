@@ -12,7 +12,7 @@ htmlFinal=/var/www/localhost/htdocs/index.html #final html file
 green='#12d32c'
 red='#d40e15'
 
-#check dependecies & envi
+#check envi
 if [ ! -f $data ];then
     echo "No data loaded - exiting..."
     exit 1
@@ -20,12 +20,14 @@ fi
 
 if [ -f $data.tmp ];then rm $data.tmp;fi
 if [ -f $htmlFinal.tmp ];then rm $htmlFinal.tmp;fi
+if [ ! -d /var/www/localhost/htdocs/hosts ];then mkdir -p /var/www/localhost/htdocs/hosts;fi
 
 # reload data
 OLDIFS=$IFS
 IFS=';'
 while read "group" "host" "alias" "lastStatus" "lastChange"
     do
+    if [ ! -f /var/www/localhost/htdocs/hosts/$host.html ];then touch /var/www/localhost/htdocs/hosts/$host.html;fi
     now=$(date "+%d.%m.%C%y %H:%M:%S")
     newStatus=OFF
     echo "Testing $host..."
@@ -33,6 +35,7 @@ while read "group" "host" "alias" "lastStatus" "lastChange"
     if [ ! "$newStatus" = "$lastStatus" ];then
         echo "Status of host $host has chaged from $lastStatus to $newStatus on $now."
         echo "$group;$host;$alias;$newStatus;$now" >> $data.tmp
+        echo "$now : Status changed to $newStatus<br>" >> /var/www/localhost/htdocs/hosts/$host.html
     else
         echo "$group;$host;$alias;$lastStatus;$lastChange" >> $data.tmp
     fi
@@ -69,7 +72,7 @@ echo "
        }
 
        .topnav a:hover {
-         background-color: #152739;
+         background-color: #7a8087;
          color: black;
        }
 </style>
@@ -109,7 +112,11 @@ echo "
            }
            tr:nth-child(even),
            tr:nth-child(even) td {
-                  background-color: #045c88;
+                  background-color: #787d80;
+           }
+           tr:nth-child(odd),
+           tr:nth-child(odd) td {
+                  background-color: #5c5e61;
            }
 </style>
 
@@ -139,9 +146,12 @@ output
         resovledAlias="($alias)"
     fi
     if [ "$lastStatus" = "OK" ];then 
-        echo "<tr><td>$group</td><td>$host $resovledAlias</td><td style='color:$green'>$lastStatus</td><td>$lastChange</td></tr>" >> $htmlFinal.tmp
+        
+        echo "<tr><td>$group</td><td><a href="/hosts/$host.html">$host $resovledAlias</a></td><td style='color:$green'>$lastStatus</td><td>$lastChange</td></tr>" >> $htmlFinal.tmp
+        
+        
     else
-        echo "<tr><td style='color:$red'>$group</td><td style='color:$red'>$host $resovledAlias </td><td style='color:$red'>$lastStatus</td><td style='color:$red'>$lastChange</td></tr>" >> $htmlFinal.tmp
+        echo "<tr><td style='color:$red'>$group</td><td style='color:$red'><a href="/hosts/$host.html">$host $resovledAlias</a></td><td style='color:$red'>$lastStatus</td><td style='color:$red'>$lastChange</td></tr>" >> $htmlFinal.tmp
     fi
 done < $data
 IFS=$OLDIFS
