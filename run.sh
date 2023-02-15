@@ -4,14 +4,60 @@
 
 version=2023.01.001
 
-#variables
+#############################
+#         VARIABLES         #
+#############################
 data=/root/test.csv #"database" 
 htmlFinal=/var/www/localhost/htdocs/index.html #final html file
 lastest=/root/lastest.txt # log of lastest changes
+now=$(date "+%d.%m.%C%y %H:%M:%S")
 
 #web colours
 green='#12d32c'
 red='#d40e15'
+
+#############################
+#         FUNCTIONS         #
+#############################
+
+function _testHost () #reload data
+{
+    local _group=$1
+    local _host=$2
+    local _alias=$3
+    local _lastStatus=$4
+    local _lastChange=$5
+    
+    if [ ! -f /var/www/localhost/htdocs/hosts/$_host.html ];then touch /var/www/localhost/htdocs/hosts/$_host.html;fi
+
+    now=$(date "+%d.%m.%C%y %H:%M:%S")
+    _newStatus=OFF
+    ping -c 1 $_host >/dev/null && _newStatus=OK
+    echo "$_host - newStatus:$_newStatus"
+
+    #resolve empty alias    
+    if [ -z $_alias ];then
+        _resovledAlias=""
+    else
+        _resovledAlias="($_alias)"
+    fi
+
+    if [ ! "$_newStatus" = "$_lastStatus" ];then
+        echo "Status of host $_host has chaged from $_lastStatus to $_newStatus on $now."
+        echo "$_group;$_host;$_alias;$_newStatus;$now" >> /tmp/$_host.host
+        echo "$now : Status changed to $_newStatus<br>" >> /var/www/localhost/htdocs/hosts/$_host.html
+        echo "$now : $_host $_resovledAlias - Status changed to $_newStatus<br>" >> $lastest 
+    else
+        echo "$_group;$_host;$_alias;$_lastStatus;$_lastChange" >> /tmp/$_host.host
+    fi
+
+}
+
+
+
+#############################
+#           SCRIPT          #
+#############################
 
 #check envi
 if [ ! -f $data ];then
@@ -24,36 +70,22 @@ if [ -f $htmlFinal.tmp ];then rm $htmlFinal.tmp;fi
 if [ ! -d /var/www/localhost/htdocs/hosts ];then mkdir -p /var/www/localhost/htdocs/hosts;fi
 if [ ! -f $lastest ];then touch $lastest;fi
 
+
 # reload data
 OLDIFS=$IFS
 IFS=';'
 while read "group" "host" "alias" "lastStatus" "lastChange"
     do
-    if [ ! -f /var/www/localhost/htdocs/hosts/$host.html ];then touch /var/www/localhost/htdocs/hosts/$host.html;fi
-    now=$(date "+%d.%m.%C%y %H:%M:%S")
-    newStatus=OFF
-    echo -n "Testing $host...   "
-    ping -c 1 $host >/dev/null && newStatus=OK
-    echo $newStatus
-    
-    if [ -z $alias ];then
-        resovledAlias=""
-    else
-        resovledAlias="($alias)"
-    fi
-
-    if [ ! "$newStatus" = "$lastStatus" ];then
-        echo "Status of host $host has chaged from $lastStatus to $newStatus on $now."
-        echo "$group;$host;$alias;$newStatus;$now" >> $data.tmp
-        echo "$now : Status changed to $newStatus<br>" >> /var/www/localhost/htdocs/hosts/$host.html
-        echo "$now : $host $resovledAlias - Status changed to $newStatus<br>" >> $lastest 
-
-    else
-        echo "$group;$host;$alias;$lastStatus;$lastChange" >> $data.tmp
-    fi
+    _testHost $group $host $alias $lastStatus $lastChange &
 done < $data
 IFS=$OLDIFS
-mv $data.tmp $data
+wait $(jobs -p)
+
+# merge reloaded data
+if [ -f $data ];then rm $data;fi
+cat /tmp/*.host >> $data;rm /tmp/*.host
+
+echo
 
 # generate html
 echo "
@@ -181,4 +213,5 @@ echo "
 </table>
 </body></html>" >> $htmlFinal.tmp
 mv $htmlFinal.tmp $htmlFinal
+echo "done"
 exit
