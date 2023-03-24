@@ -2,13 +2,14 @@
 #
 # script moniters hosts; project results to html file(s)
 
-version=2023.01.001
+version=2023.03.004
 
 #############################
 #         VARIABLES         #
 #############################
-data=/root/test.csv #"database" 
-htmlFinal=/var/www/localhost/htdocs/index.html #final html file
+data=/root/brezova.csv #"database" 
+wwwFolder=/var/www/html # this is where web lives
+htmlFinal=$wwwFolder/index.html #final html file 
 lastest=/root/lastest.txt # log of lastest changes
 now=$(date "+%d.%m.%C%y %H:%M:%S")
 
@@ -28,7 +29,7 @@ function _testHost () #reload data
     local _lastStatus=$4
     local _lastChange=$5
     
-    if [ ! -f /var/www/localhost/htdocs/hosts/$_host.html ];then touch /var/www/localhost/htdocs/hosts/$_host.html;fi
+    if [ ! -f $wwwFolder/hosts/$_host.html ];then touch $wwwFolder/hosts/$_host.html;fi
 
     now=$(date "+%d.%m.%C%y %H:%M:%S")
     _newStatus=OFF
@@ -45,7 +46,7 @@ function _testHost () #reload data
     if [ ! "$_newStatus" = "$_lastStatus" ];then
         echo "Status of host $_host has chaged from $_lastStatus to $_newStatus on $now."
         echo "$_group;$_host;$_alias;$_newStatus;$now" >> /tmp/$_host.host
-        echo "$now : Status changed to $_newStatus<br>" >> /var/www/localhost/htdocs/hosts/$_host.html
+        echo "$now : Status changed to $_newStatus<br>" >> $wwwFolder/hosts/$_host.html
         echo "$now : $_host $_resovledAlias - Status changed to $_newStatus<br>" >> $lastest 
     else
         echo "$_group;$_host;$_alias;$_lastStatus;$_lastChange" >> /tmp/$_host.host
@@ -67,7 +68,7 @@ fi
 
 if [ -f $data.tmp ];then rm $data.tmp;fi
 if [ -f $htmlFinal.tmp ];then rm $htmlFinal.tmp;fi
-if [ ! -d /var/www/localhost/htdocs/hosts ];then mkdir -p /var/www/localhost/htdocs/hosts;fi
+if [ ! -d $wwwFolder/hosts ];then mkdir -p $wwwFolder/hosts;fi
 if [ ! -f $lastest ];then touch $lastest;fi
 
 
@@ -215,3 +216,12 @@ echo "
 mv $htmlFinal.tmp $htmlFinal
 echo "done"
 exit
+
+
+#############################
+#       Instalation         #
+#############################
+
+#debian
+apt instal mc nano git bash apache2 -y
+
