@@ -7,7 +7,7 @@ version=2023.03.004
 #############################
 #         VARIABLES         #
 #############################
-data=/root/brezova.csv #"database" 
+data=/root/data.csv #"database" 
 wwwFolder=/var/www/html # this is where web lives
 htmlFinal=$wwwFolder/index.html #final html file 
 lastest=/root/lastest.txt # log of lastest changes
