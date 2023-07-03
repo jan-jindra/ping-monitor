@@ -2,12 +2,12 @@
 #
 # script moniters hosts; project results to html file(s)
 
-version=2023.03.004
+version=2023.07.001
 
 #############################
 #         VARIABLES         #
 #############################
-data=/root/data.csv #"database" 
+data=/data/data.csv #"database" 
 wwwFolder=/var/www/html # this is where web lives
 htmlFinal=$wwwFolder/index.html #final html file 
 lastest=/root/lastest.txt # log of lastest changes
@@ -85,6 +85,7 @@ wait $(jobs -p)
 # merge reloaded data
 if [ -f $data ];then rm $data;fi
 cat /tmp/*.host >> $data;rm /tmp/*.host
+chmod 777 $data
 
 echo
 
@@ -216,26 +217,3 @@ echo "
 mv $htmlFinal.tmp $htmlFinal
 echo "done"
 exit
-
-
-#############################
-#       Instalation         #
-#############################
-
-#debian
-apt instal mc nano git bash apache2 -y
-
-<<csv
-
-A .csv file with  data must  be created and given to scritp (variable $data).
-
-structore is simple:
-    group;ip/hostname;human-readable.name
-
-example:
-    servers;main-server;DomainController-1
-    servers;192.168.1.1;webserver
-    internet;8.8.8.8;google-ip
-    internet;google.com;google-dns
-
-csv
